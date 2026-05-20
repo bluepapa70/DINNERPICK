@@ -15,17 +15,24 @@ const LocationService = {
 
     async getAddressFromCoords(lat, lng) {
         return new Promise((resolve) => {
-            if (typeof kakao === 'undefined') { resolve('위치 확인됨'); return; }
-            const geocoder = new kakao.maps.services.Geocoder();
-            geocoder.coord2RegionCode(lng, lat, (result, status) => {
-                if (status === kakao.maps.services.Status.OK) {
-                    const dong = result.find(r => r.region_type === 'H');
-                    const gu   = result.find(r => r.region_type === 'B');
-                    resolve(dong ? dong.address_name : gu ? gu.address_name : '위치 확인됨');
-                } else {
-                    resolve('위치 확인됨');
-                }
-            });
+            if (typeof kakao === 'undefined' || !kakao.maps?.services) {
+                resolve('위치 확인됨');
+                return;
+            }
+            try {
+                const geocoder = new kakao.maps.services.Geocoder();
+                geocoder.coord2RegionCode(lng, lat, (result, status) => {
+                    if (status === kakao.maps.services.Status.OK) {
+                        const dong = result.find(r => r.region_type === 'H');
+                        const gu   = result.find(r => r.region_type === 'B');
+                        resolve(dong ? dong.address_name : gu ? gu.address_name : '위치 확인됨');
+                    } else {
+                        resolve('위치 확인됨');
+                    }
+                });
+            } catch (e) {
+                resolve('위치 확인됨');
+            }
         });
     }
 };

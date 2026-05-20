@@ -75,13 +75,18 @@ const App = {
         txt.textContent = '위치를 불러오는 중...';
         try {
             this.location = await LocationService.getCurrentPosition();
-            const addr    = await LocationService.getAddressFromCoords(this.location.lat, this.location.lng);
-            txt.textContent = addr;
-            await this._fetchRestaurants();
         } catch (e) {
             txt.textContent = '위치를 가져올 수 없어요';
             document.getElementById('location-modal').classList.remove('hidden');
+            return;
         }
+        try {
+            const addr  = await LocationService.getAddressFromCoords(this.location.lat, this.location.lng);
+            txt.textContent = addr;
+        } catch (e) {
+            txt.textContent = '위치 확인됨';
+        }
+        await this._fetchRestaurants();
     },
 
     async _fetchRestaurants() {
