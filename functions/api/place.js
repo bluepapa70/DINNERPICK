@@ -21,8 +21,17 @@ export async function onRequest(context) {
         return json({ error: '장소 정보를 가져올 수 없습니다.', status: res.status }, 502);
     }
 
-    const data     = await res.json();
-    const basic    = data.basicInfo || {};
+    let data;
+    try {
+        data = await res.json();
+    } catch (e) {
+        const text = await res.text().catch(() => '');
+        return json({ error: 'JSON 파싱 실패', preview: text.slice(0, 300) }, 502);
+    }
+
+    // 최상위 키 목록을 debug 필드로 노출
+    const basic    = data.basicInfo || data.place || data.document || {};
+    const debugKeys = Object.keys(data);
 
     // ── 별점 ──────────────────────────────────────────────
     const feedback  = basic.feedback || {};
@@ -70,7 +79,7 @@ export async function onRequest(context) {
     const facilityInfo = basic.facilityInfo || {};
     const parking = facilityInfo.parking || null;
 
-    return json({ rating, scorecnt, reviewcnt, menus, isOpen, isBreak, isHoliday, hours, homepage, parking });
+    return json({ rating, scorecnt, reviewcnt, menus, isOpen, isBreak, isHoliday, hours, homepage, parking, _debug: { keys: debugKeys, hasFeedback: !!data.basicInfo?.feedback, hasOpenHour: !!data.basicInfo?.openHour } });
 }
 
 function json(data, status = 200) {

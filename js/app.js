@@ -186,9 +186,11 @@ const App = {
 
     async _fetchPlaceDetail(id) {
         try {
+            console.log('[place] fetching id:', id);
             const res  = await fetch(`/api/place?id=${id}`);
             const data = await res.json();
-            if (data.error) return;
+            console.log('[place] response:', data);
+            if (data.error) { console.warn('[place] API error:', data.error); return; }
 
             // 영업 상태 + 시간
             if (data.isOpen !== null) {
@@ -241,7 +243,7 @@ const App = {
                 document.getElementById('res-menu-row').classList.remove('hidden');
             }
         } catch (e) {
-            // 상세 정보 실패 시 조용히 무시
+            console.error('[place] 상세 정보 오류:', e);
         }
     },
 
