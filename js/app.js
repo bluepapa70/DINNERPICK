@@ -1,23 +1,16 @@
 const App = {
-    location:         null,
-    allRestaurants:   [],
-    excluded:         new Set(),
-    radius:           1000,
-    category:         'FD6',
-    comboMode:        false,
-    foodPlaces:       [],
-    barPlaces:        [],
-    slot:             null,
-    currentResult:    null,
-    currentBarResult: null,
+    location:    null,
+    restaurants: [],
+    excluded:    new Set(),
+    radius:      1000,
+    category:    'FD6',
+    slot:        null,
+    currentResult: null,
 
     async init() {
         this.slot = new SlotMachine(
             document.getElementById('reel'),
-            (r) => {
-                if (this.comboMode) this.showComboResult(r);
-                else this.showResult(r);
-            }
+            (r) => this.showResult(r)
         );
         this._bindEvents();
         await this._getLocation();
@@ -41,16 +34,7 @@ const App = {
                 document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
                 this.category = btn.dataset.cat;
-                this._applyFilter();
-            });
-        });
-
-        document.querySelectorAll('.mode-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                this.comboMode = btn.dataset.mode === 'combo';
-                this._applyFilter();
+                this._fetchRestaurants();
             });
         });
 
@@ -78,14 +62,6 @@ const App = {
                     this.currentResult.place_name
                 );
             }
-        });
-
-        document.getElementById('combo-modal-close').addEventListener('click',  () => this._closeComboModal());
-        document.getElementById('combo-modal-overlay').addEventListener('click', () => this._closeComboModal());
-
-        document.getElementById('combo-retry-btn').addEventListener('click', () => {
-            this._closeComboModal();
-            setTimeout(() => this._spin(), 320);
         });
 
         document.getElementById('location-retry').addEventListener('click', () => {
@@ -126,7 +102,7 @@ const App = {
                 x:        this.location.lng,
                 y:        this.location.lat,
                 radius:   this.radius,
-                category: 'FD6'
+                category: this.category
             });
             const res  = await fetch(`/api/restaurants?${params}`);
             const data = await res.json();
@@ -137,7 +113,7 @@ const App = {
                 return;
             }
 
-            this.allRestaurants = data.documents || [];
+            this.restaurants = data.documents || [];
             this._applyFilter();
         } catch (e) {
             countEl.textContent = '⚠️ 맛집을 불러오지 못했어요 (네트워크 오류)';
@@ -145,38 +121,19 @@ const App = {
         }
     },
 
-    _isBar(r) {
-        const cat = r.category_name || '';
-        return cat.includes('술집') || cat.includes('주점') || cat.includes('호프');
-    },
-
     _applyFilter() {
         const countEl = document.getElementById('result-count');
         const spinBtn = document.getElementById('spin-btn');
+        const list    = this.restaurants.filter(r => !this.excluded.has(r.id));
 
-        const nonExcluded = this.allRestaurants.filter(r => !this.excluded.has(r.id));
+        this.slot.setRestaurants(list);
 
-        let food = nonExcluded.filter(r => !this._isBar(r));
-        if (this.category !== 'FD6') {
-            food = food.filter(r => r.category_name && r.category_name.includes(this.category));
-        }
-        this.foodPlaces = food;
-        this.barPlaces  = nonExcluded.filter(r => this._isBar(r));
-
-        this.slot.setRestaurants(this.foodPlaces);
-
-        if (this.foodPlaces.length > 0) {
-            if (this.comboMode && this.barPlaces.length > 0) {
-                countEl.textContent = `✧ 음식점 ${this.foodPlaces.length}곳 · 술집 ${this.barPlaces.length}곳 발견!`;
-            } else if (this.comboMode) {
-                countEl.textContent = `✧ 음식점 ${this.foodPlaces.length}곳 발견 (근처 술집 없음)`;
-            } else {
-                countEl.textContent = `✧ 주변 맛집 ${this.foodPlaces.length}곳 발견!`;
-            }
-            spinBtn.disabled = false;
+        if (list.length > 0) {
+            countEl.textContent = `✧ 주변 맛집 ${list.length}곳 발견!`;
+            spinBtn.disabled    = false;
         } else {
             countEl.textContent = '😢 맛집이 없어요. 반경을 늘려보세요!';
-            spinBtn.disabled = true;
+            spinBtn.disabled    = true;
         }
     },
 
@@ -200,10 +157,12 @@ const App = {
         document.getElementById('res-category').textContent = `${getCategoryEmoji(restaurant.category_name)} ${restaurant.category_name || '음식점'}`;
         document.getElementById('res-address').textContent  = restaurant.road_address_name || restaurant.address_name || '-';
 
+        // 카테고리 칩
         const leafCat = (restaurant.category_name || '').split('>').pop().trim();
         const chipEl  = document.getElementById('res-cat-chip');
         if (chipEl) chipEl.textContent = leafCat;
 
+        // 거리 + 도보 시간
         if (restaurant.distance) {
             const dist = parseInt(restaurant.distance);
             const mins = Math.max(1, Math.round(dist / 67));
@@ -214,6 +173,7 @@ const App = {
             document.getElementById('res-walk').textContent     = '-';
         }
 
+        // 카카오맵 링크
         if (restaurant.place_url) {
             document.getElementById('res-kakaomap').href = restaurant.place_url;
             document.getElementById('res-kakaomap-row').classList.remove('hidden');
@@ -235,57 +195,8 @@ const App = {
         this._launchConfetti();
     },
 
-    showComboResult(foodRestaurant) {
-        this.currentResult = foodRestaurant;
-
-        const bar = this.barPlaces.length > 0
-            ? this.barPlaces[Math.floor(Math.random() * this.barPlaces.length)]
-            : null;
-        this.currentBarResult = bar;
-
-        this._fillComboCard('food', foodRestaurant);
-
-        if (bar) {
-            this._fillComboCard('bar', bar);
-            document.getElementById('combo-bar-card').classList.remove('hidden');
-            document.getElementById('combo-no-bar').classList.add('hidden');
-        } else {
-            document.getElementById('combo-bar-card').classList.add('hidden');
-            document.getElementById('combo-no-bar').classList.remove('hidden');
-        }
-
-        document.getElementById('combo-modal').classList.remove('hidden');
-        this._launchConfetti();
-    },
-
-    _fillComboCard(type, r) {
-        const p = `combo-${type}`;
-        document.getElementById(`${p}-name`).textContent     = r.place_name;
-        document.getElementById(`${p}-category`).textContent = `${getCategoryEmoji(r.category_name)} ${r.category_name || '음식점'}`;
-        document.getElementById(`${p}-address`).textContent  = r.road_address_name || r.address_name || '-';
-
-        if (r.distance) {
-            const dist = parseInt(r.distance);
-            const mins = Math.max(1, Math.round(dist / 67));
-            document.getElementById(`${p}-distance`).textContent = `${dist.toLocaleString()}m · 도보 약 ${mins}분`;
-        } else {
-            document.getElementById(`${p}-distance`).textContent = '-';
-        }
-
-        if (r.place_url) {
-            document.getElementById(`${p}-kakaomap`).href = r.place_url;
-            document.getElementById(`${p}-kakaomap-row`).classList.remove('hidden');
-        } else {
-            document.getElementById(`${p}-kakaomap-row`).classList.add('hidden');
-        }
-    },
-
     _closeModal() {
         document.getElementById('result-modal').classList.add('hidden');
-    },
-
-    _closeComboModal() {
-        document.getElementById('combo-modal').classList.add('hidden');
     },
 
     _launchConfetti() {

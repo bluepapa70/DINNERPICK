@@ -66,10 +66,6 @@
 
             <!-- 하단 버튼 영역 -->
             <div class="machine-bottom">
-                <div class="mode-toggle">
-                    <button class="mode-btn active" data-mode="single">🍽️ 한 곳만</button>
-                    <button class="mode-btn" data-mode="combo">1차+2차 🍺</button>
-                </div>
                 <div id="result-count" class="result-count">위치 확인 중...</div>
                 <button id="spin-btn" class="spin-btn" disabled>
                     <span class="spin-btn-text">🍽️ Pick me !</span>
@@ -119,69 +115,6 @@
                 <button type="button" class="action-btn navi-btn" id="navi-btn">🗺️ 길찾기</button>
                 <button type="button" class="action-btn retry-btn" id="retry-btn">🔄 다시!</button>
                 <button type="button" class="action-btn exclude-btn" id="exclude-btn">🚫 제외</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- 1차+2차 콤보 결과 모달 -->
-    <div id="combo-modal" class="modal hidden">
-        <div class="modal-overlay" id="combo-modal-overlay"></div>
-        <div class="modal-content combo-modal-content">
-            <div class="modal-header">
-                <div class="winner-badge">🎉 오늘의 코스!</div>
-                <button class="modal-close" id="combo-modal-close">✕</button>
-            </div>
-
-            <!-- 1차 카드 -->
-            <div class="combo-card">
-                <div class="combo-round-badge">🍽️ 1차 · 식사</div>
-                <div class="combo-place-name" id="combo-food-name">-</div>
-                <div class="combo-place-category" id="combo-food-category">-</div>
-                <div class="combo-info">
-                    <div class="info-row">
-                        <span class="info-icon">📍</span>
-                        <span id="combo-food-address">-</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-icon">🚶</span>
-                        <span id="combo-food-distance">-</span>
-                    </div>
-                    <div class="info-row hidden" id="combo-food-kakaomap-row">
-                        <span class="info-icon">🗺️</span>
-                        <a id="combo-food-kakaomap" href="#" target="_blank" class="info-link">카카오맵에서 보기</a>
-                    </div>
-                </div>
-            </div>
-
-            <div class="combo-divider">↓</div>
-
-            <!-- 2차 카드 -->
-            <div class="combo-card combo-bar-card" id="combo-bar-card">
-                <div class="combo-round-badge combo-round-bar">🍺 2차 · 술집</div>
-                <div class="combo-place-name" id="combo-bar-name">-</div>
-                <div class="combo-place-category" id="combo-bar-category">-</div>
-                <div class="combo-info">
-                    <div class="info-row">
-                        <span class="info-icon">📍</span>
-                        <span id="combo-bar-address">-</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-icon">🚶</span>
-                        <span id="combo-bar-distance">-</span>
-                    </div>
-                    <div class="info-row hidden" id="combo-bar-kakaomap-row">
-                        <span class="info-icon">🗺️</span>
-                        <a id="combo-bar-kakaomap" href="#" target="_blank" class="info-link">카카오맵에서 보기</a>
-                    </div>
-                </div>
-            </div>
-
-            <div id="combo-no-bar" class="combo-no-bar hidden">
-                😢 근처에 술집을 찾지 못했어요
-            </div>
-
-            <div class="modal-actions">
-                <button type="button" class="action-btn retry-btn" id="combo-retry-btn">🔄 다시!</button>
             </div>
         </div>
     </div>
