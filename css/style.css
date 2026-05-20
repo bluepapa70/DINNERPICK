@@ -492,6 +492,14 @@ body {
 .info-icon { font-size: 15px; flex-shrink: 0; margin-top: 1px; }
 .info-row span:last-child { color: rgba(245,230,208,0.82); line-height: 1.4; }
 .info-row.hidden { display: none; }
+.info-link {
+    color: var(--gold);
+    text-decoration: none;
+    font-weight: 600;
+    border-bottom: 1px solid rgba(201,169,110,0.35);
+    transition: opacity 0.15s;
+}
+.info-link:hover { opacity: 0.75; }
 .open-info { display: flex; flex-direction: column; gap: 3px; }
 .hours-text { font-size: 12px; opacity: 0.65; }
 .open-badge   { color: #4caf82; font-weight: 700; font-size: 13px; }

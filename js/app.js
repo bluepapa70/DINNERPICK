@@ -161,12 +161,40 @@ const App = {
         document.getElementById('res-name').textContent     = restaurant.place_name;
         document.getElementById('res-category').textContent = `${getCategoryEmoji(restaurant.category_name)} ${restaurant.category_name || '음식점'}`;
         document.getElementById('res-address').textContent  = restaurant.road_address_name || restaurant.address_name || '-';
-        document.getElementById('res-distance').textContent = restaurant.distance ? `약 ${restaurant.distance}m` : '-';
         document.getElementById('res-phone').textContent    = restaurant.phone || '정보 없음';
 
+        // 카테고리 칩
         const leafCat = (restaurant.category_name || '').split('>').pop().trim();
         const chipEl  = document.getElementById('res-cat-chip');
         if (chipEl) chipEl.textContent = leafCat;
+
+        // 거리 + 도보 시간
+        if (restaurant.distance) {
+            const dist = parseInt(restaurant.distance);
+            const mins = Math.max(1, Math.round(dist / 67));
+            document.getElementById('res-distance').textContent = `${dist.toLocaleString()}m`;
+            document.getElementById('res-walk').textContent     = `도보 약 ${mins}분`;
+            document.getElementById('res-walk-row').classList.remove('hidden');
+        } else {
+            document.getElementById('res-distance').textContent = '-';
+            document.getElementById('res-walk-row').classList.add('hidden');
+        }
+
+        // 지번 주소 (도로명과 다를 때만)
+        if (restaurant.address_name && restaurant.address_name !== restaurant.road_address_name) {
+            document.getElementById('res-jibun').textContent = restaurant.address_name;
+            document.getElementById('res-jibun-row').classList.remove('hidden');
+        } else {
+            document.getElementById('res-jibun-row').classList.add('hidden');
+        }
+
+        // 카카오맵 링크
+        if (restaurant.place_url) {
+            document.getElementById('res-kakaomap').href = restaurant.place_url;
+            document.getElementById('res-kakaomap-row').classList.remove('hidden');
+        } else {
+            document.getElementById('res-kakaomap-row').classList.add('hidden');
+        }
 
         ['res-open-row','res-rating-row','res-homepage-row','res-parking-row','res-menu-row']
             .forEach(id => document.getElementById(id).classList.add('hidden'));
