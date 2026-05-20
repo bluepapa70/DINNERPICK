@@ -158,10 +158,9 @@ const App = {
     showResult(restaurant) {
         this.currentResult = restaurant;
 
-        document.getElementById('res-name').textContent     = restaurant.place_name;
+        document.getElementById('res-name').textContent    = restaurant.place_name;
         document.getElementById('res-category').textContent = `${getCategoryEmoji(restaurant.category_name)} ${restaurant.category_name || '음식점'}`;
         document.getElementById('res-address').textContent  = restaurant.road_address_name || restaurant.address_name || '-';
-        document.getElementById('res-phone').textContent    = restaurant.phone || '정보 없음';
 
         // 카테고리 칩
         const leafCat = (restaurant.category_name || '').split('>').pop().trim();
@@ -174,18 +173,9 @@ const App = {
             const mins = Math.max(1, Math.round(dist / 67));
             document.getElementById('res-distance').textContent = `${dist.toLocaleString()}m`;
             document.getElementById('res-walk').textContent     = `도보 약 ${mins}분`;
-            document.getElementById('res-walk-row').classList.remove('hidden');
         } else {
             document.getElementById('res-distance').textContent = '-';
-            document.getElementById('res-walk-row').classList.add('hidden');
-        }
-
-        // 지번 주소 (도로명과 다를 때만)
-        if (restaurant.address_name && restaurant.address_name !== restaurant.road_address_name) {
-            document.getElementById('res-jibun').textContent = restaurant.address_name;
-            document.getElementById('res-jibun-row').classList.remove('hidden');
-        } else {
-            document.getElementById('res-jibun-row').classList.add('hidden');
+            document.getElementById('res-walk').textContent     = '-';
         }
 
         // 카카오맵 링크
@@ -196,14 +186,7 @@ const App = {
             document.getElementById('res-kakaomap-row').classList.add('hidden');
         }
 
-        ['res-open-row','res-rating-row','res-homepage-row','res-parking-row','res-menu-row']
-            .forEach(id => document.getElementById(id).classList.add('hidden'));
-
         document.getElementById('result-modal').classList.remove('hidden');
-
-        console.log('[restaurant] 전체 필드:', JSON.stringify(restaurant));
-        const placeId = restaurant.id || (restaurant.place_url || '').split('/').pop();
-        this._fetchPlaceDetail(placeId);
 
         setTimeout(() => {
             KakaoMapService.initMiniMap(
@@ -215,85 +198,6 @@ const App = {
         }, 350);
 
         this._launchConfetti();
-    },
-
-    async _fetchPlaceDetail(id) {
-        try {
-            console.log('[place] fetching id:', id);
-            const res  = await fetch(`/api/place?id=${id}`);
-            const data = await res.json();
-            console.log('[place] response:', data);
-            if (data.error) {
-                console.warn('[place] API error:', data.error);
-                if (data._errors) console.log('[place] _errors:', JSON.stringify(data._errors));
-                if (data._debug)  console.log('[place] _debug:',  JSON.stringify(data._debug, null, 2));
-                return;
-            }
-
-            // 영업 상태 + 시간
-            if (data.isOpen !== null) {
-                let statusHtml = '';
-                if (data.isHoliday) {
-                    statusHtml = '<span class="closed-badge">휴무일</span>';
-                } else if (data.isBreak) {
-                    statusHtml = '<span class="break-badge">브레이크타임</span>';
-                } else if (data.isOpen) {
-                    statusHtml = '<span class="open-badge">영업중</span>';
-                } else {
-                    statusHtml = '<span class="closed-badge">영업종료</span>';
-                }
-                document.getElementById('res-open-status').innerHTML = statusHtml;
-                if (data.hours) {
-                    document.getElementById('res-hours').textContent = data.hours;
-                }
-                document.getElementById('res-open-row').classList.remove('hidden');
-            }
-
-            // 별점
-            if (data.rating) {
-                const stars = this._renderStars(parseFloat(data.rating));
-                document.getElementById('res-rating').innerHTML =
-                    `${stars} ${data.rating}`
-                    + (data.reviewcnt ? ` <span style="opacity:0.55;font-size:11px;">(리뷰 ${data.reviewcnt})</span>` : '');
-                document.getElementById('res-rating-row').classList.remove('hidden');
-            }
-
-            // 홈페이지
-            if (data.homepage) {
-                document.getElementById('res-homepage').href = data.homepage;
-                document.getElementById('res-homepage-row').classList.remove('hidden');
-            }
-
-            // 주차
-            if (data.parking) {
-                document.getElementById('res-parking').textContent = data.parking;
-                document.getElementById('res-parking-row').classList.remove('hidden');
-            }
-
-            // 메뉴
-            if (data.menus && data.menus.length > 0) {
-                document.getElementById('res-menus').innerHTML = data.menus.map(m =>
-                    `<div class="menu-item">
-                        <span class="menu-item-name">${m.name}</span>
-                        ${m.price ? `<span class="menu-item-price">${m.price}</span>` : ''}
-                    </div>`
-                ).join('');
-                document.getElementById('res-menu-row').classList.remove('hidden');
-            }
-        } catch (e) {
-            console.error('[place] 상세 정보 오류:', e);
-        }
-    },
-
-    _renderStars(score) {
-        const full  = Math.floor(score);
-        const half  = score - full >= 0.5 ? 1 : 0;
-        const empty = 5 - full - half;
-        return '<span style="color:#c9a96e;letter-spacing:1px;">'
-            + '★'.repeat(full)
-            + (half ? '½' : '')
-            + '<span style="opacity:0.3;">' + '★'.repeat(empty) + '</span>'
-            + '</span>';
     },
 
     _closeModal() {
