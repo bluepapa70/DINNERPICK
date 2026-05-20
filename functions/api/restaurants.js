@@ -13,6 +13,11 @@ export async function onRequest(context) {
         return json({ error: '좌표(x, y)가 필요합니다.' }, 400);
     }
 
+    const apiKey = context.env.KAKAO_REST_API_KEY;
+    if (!apiKey) {
+        return json({ error: 'KAKAO_REST_API_KEY 환경변수가 설정되지 않았습니다.' }, 500);
+    }
+
     const pages = [];
     let isEnd   = false;
     let page    = 1;
@@ -29,7 +34,7 @@ export async function onRequest(context) {
         apiUrl.searchParams.set('page', page);
 
         const res  = await fetch(apiUrl.toString(), {
-            headers: { Authorization: `KakaoAK ${context.env.KAKAO_REST_API_KEY}` }
+            headers: { Authorization: `KakaoAK ${apiKey}` }
         });
 
         if (!res.ok) {
