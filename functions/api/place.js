@@ -1,5 +1,6 @@
 /**
  * Cloudflare Pages Function — 카카오 장소 상세 정보 프록시
+ * place.map.kakao.com/{id} HTML에서 데이터 추출
  */
 export async function onRequest(context) {
     const url = new URL(context.request.url);
@@ -11,56 +12,94 @@ export async function onRequest(context) {
 
     const headers = {
         'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1',
-        'Accept':     'application/json, text/plain, */*',
-        'Accept-Language': 'ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7',
-        'Referer':    'https://m.map.kakao.com/',
-        'Origin':     'https://m.map.kakao.com',
+        'Accept':          'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'ko-KR,ko;q=0.9',
+        'Referer':         'https://m.map.kakao.com/',
     };
 
-    const candidates = [
-        `https://place.map.kakao.com/m/place/v/${id}`,
-        `https://place.map.kakao.com/m/main/v/${id}`,
-        `https://place.map.kakao.com/place/v/${id}`,
-        `https://place.map.kakao.com/m/place/${id}`,
-        `https://place.map.kakao.com/${id}`,
-    ];
+    const res = await fetch(`https://place.map.kakao.com/${id}`, { headers });
+    if (!res.ok) {
+        return json({ error: 'HTML 페이지 요청 실패', status: res.status }, 502);
+    }
 
-    let data    = null;
-    let usedUrl = null;
-    const errors = [];
+    const html = await res.text();
 
-    for (const endpoint of candidates) {
+    // ── 1. JSON-LD (schema.org) ──────────────────────────────────────────────
+    const ldMatch = html.match(/<script[^>]*type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/i);
+    if (ldMatch) {
         try {
-            const res = await fetch(endpoint, { headers });
-            const statusCode = res.status;
+            const ld     = JSON.parse(ldMatch[1]);
+            const result = extractFromLd(ld);
+            result._source = 'json-ld';
+            return json(result);
+        } catch { /* fall through */ }
+    }
 
-            if (!res.ok) {
-                errors.push({ url: endpoint, status: statusCode });
-                continue;
-            }
-
-            const text = await res.text();
+    // ── 2. window.__DATA__ 또는 유사 전역 변수 ─────────────────────────────
+    const dataPatterns = [
+        /window\.__DATA__\s*=\s*(\{[\s\S]*?\});\s*(?:window|<\/script>)/i,
+        /window\.__PRELOADED_STATE__\s*=\s*(\{[\s\S]*?\});\s*(?:window|<\/script>)/i,
+        /window\.__INITIAL_STATE__\s*=\s*(\{[\s\S]*?\});\s*(?:window|<\/script>)/i,
+        /\bPLACE_DATA\s*=\s*(\{[\s\S]*?\});/i,
+    ];
+    for (const pattern of dataPatterns) {
+        const m = html.match(pattern);
+        if (m) {
             try {
-                const raw = JSON.parse(text);
-                if (raw && typeof raw === 'object') {
-                    data    = raw;
-                    usedUrl = endpoint;
-                    break;
-                }
-                errors.push({ url: endpoint, status: statusCode, issue: 'not an object' });
-            } catch (e) {
-                errors.push({ url: endpoint, status: statusCode, parseError: e.message, preview: text.slice(0, 200) });
-            }
-        } catch (e) {
-            errors.push({ url: endpoint, fetchError: e.message });
+                const raw    = JSON.parse(m[1]);
+                const result = extractFromRaw(raw);
+                result._source = 'global-var';
+                return json(result);
+            } catch { /* fall through */ }
         }
     }
 
-    if (!data) {
-        return json({ error: '장소 정보를 가져올 수 없습니다. (모든 엔드포인트 실패)', _errors: errors }, 502);
+    // ── 3. 디버그: HTML 미리보기 반환 ─────────────────────────────────────
+    return json({
+        error: '파싱 가능한 데이터 없음',
+        _htmlPreview: html.slice(0, 3000)
+    }, 200);
+}
+
+// JSON-LD (schema.org) 에서 추출
+function extractFromLd(ld) {
+    const result = {
+        rating: null, scorecnt: 0, reviewcnt: 0,
+        menus: [], isOpen: null, isBreak: false, isHoliday: false,
+        hours: null, homepage: null, parking: null
+    };
+
+    if (ld.aggregateRating) {
+        const r = ld.aggregateRating;
+        result.rating    = r.ratingValue != null ? parseFloat(r.ratingValue).toFixed(1) : null;
+        result.reviewcnt = Number(r.reviewCount || r.ratingCount || 0);
+        result.scorecnt  = result.reviewcnt;
     }
 
-    const basic    = data.basicInfo || data.place || data || {};
+    if (ld.openingHours) {
+        result.hours = Array.isArray(ld.openingHours)
+            ? ld.openingHours.join(' / ')
+            : String(ld.openingHours);
+    }
+
+    if (ld.url) result.homepage = ld.url;
+    if (ld.sameAs) result.homepage = result.homepage || (Array.isArray(ld.sameAs) ? ld.sameAs[0] : ld.sameAs);
+
+    if (ld.hasMenu && typeof ld.hasMenu === 'string') {
+        result.homepage = result.homepage || ld.hasMenu;
+    }
+
+    if (ld.servesCuisine) {
+        const cuisines = Array.isArray(ld.servesCuisine) ? ld.servesCuisine : [ld.servesCuisine];
+        result.menus = cuisines.slice(0, 5).map(c => ({ name: c, price: '' }));
+    }
+
+    return result;
+}
+
+// 원시 JS 객체에서 추출 (window.__DATA__ 등)
+function extractFromRaw(raw) {
+    const basic    = raw.basicInfo || raw.place || raw || {};
     const feedback = basic.feedback || {};
     const menuinfo = basic.menuinfo || {};
     const openHour = basic.openHour || {};
@@ -98,12 +137,7 @@ export async function onRequest(context) {
     const homepage     = homepageList[0]?.homepage || null;
     const parking      = basic.facilityInfo?.parking || null;
 
-    return json({
-        rating, scorecnt, reviewcnt, menus,
-        isOpen, isBreak, isHoliday, hours,
-        homepage, parking,
-        _debug: { usedUrl, topKeys: Object.keys(data) }
-    });
+    return { rating, scorecnt, reviewcnt, menus, isOpen, isBreak, isHoliday, hours, homepage, parking };
 }
 
 function json(data, status = 200) {
