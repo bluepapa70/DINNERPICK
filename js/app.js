@@ -165,7 +165,12 @@ const App = {
         const chipEl  = document.getElementById('res-cat-chip');
         if (chipEl) chipEl.textContent = leafCat;
 
+        document.getElementById('res-rating-row').classList.add('hidden');
+        document.getElementById('res-menu-row').classList.add('hidden');
+
         document.getElementById('result-modal').classList.remove('hidden');
+
+        this._fetchPlaceDetail(restaurant.id);
 
         setTimeout(() => {
             KakaoMapService.initMiniMap(
@@ -177,6 +182,46 @@ const App = {
         }, 350);
 
         this._launchConfetti();
+    },
+
+    async _fetchPlaceDetail(id) {
+        try {
+            const res  = await fetch(`/api/place?id=${id}`);
+            const data = await res.json();
+            if (data.error) return;
+
+            if (data.rating) {
+                const stars = this._renderStars(parseFloat(data.rating));
+                document.getElementById('res-rating').innerHTML =
+                    `${stars} <span style="margin-left:4px;">${data.rating}</span>`
+                    + (data.reviewcnt ? ` <span style="opacity:0.6;font-size:11px;">(리뷰 ${data.reviewcnt})</span>` : '');
+                document.getElementById('res-rating-row').classList.remove('hidden');
+            }
+
+            if (data.menus && data.menus.length > 0) {
+                const menuEl = document.getElementById('res-menus');
+                menuEl.innerHTML = data.menus.map(m =>
+                    `<div class="menu-item">
+                        <span class="menu-item-name">${m.name}</span>
+                        ${m.price ? `<span class="menu-item-price">${m.price}</span>` : ''}
+                    </div>`
+                ).join('');
+                document.getElementById('res-menu-row').classList.remove('hidden');
+            }
+        } catch (e) {
+            // 상세 정보 실패 시 조용히 무시
+        }
+    },
+
+    _renderStars(score) {
+        const full  = Math.floor(score);
+        const half  = score - full >= 0.5 ? 1 : 0;
+        const empty = 5 - full - half;
+        return '<span style="color:#c9a96e;letter-spacing:1px;">'
+            + '★'.repeat(full)
+            + (half ? '½' : '')
+            + '<span style="opacity:0.3;">' + '★'.repeat(empty) + '</span>'
+            + '</span>';
     },
 
     _closeModal() {

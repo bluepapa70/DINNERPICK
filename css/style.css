@@ -394,9 +394,10 @@ body {
 .winner-badge {
     background: linear-gradient(135deg, #d4b483, #c9a96e);
     color: #2a1a08;
-    font-family: 'Press Start 2P', monospace;
-    font-size: 8px;
-    padding: 8px 14px;
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 15px;
+    font-weight: 900;
+    padding: 8px 16px;
     border-radius: 20px;
     line-height: 1.5;
 }
@@ -492,6 +493,22 @@ body {
 .info-row:last-child { border-bottom: none; }
 .info-icon { font-size: 15px; flex-shrink: 0; margin-top: 1px; }
 .info-row span:last-child { color: rgba(245,230,208,0.82); line-height: 1.4; }
+.info-row.hidden { display: none; }
+.menu-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    color: rgba(245,230,208,0.82);
+    font-size: 13px;
+    line-height: 1.4;
+}
+.menu-item {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+}
+.menu-item-name  { flex: 1; }
+.menu-item-price { color: var(--gold); white-space: nowrap; }
 
 /* 미니맵 */
 .mini-map {
