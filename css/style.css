@@ -450,7 +450,7 @@ body {
 .modal-actions {
     display: flex;
     gap: 8px;
-    margin-bottom: 14px;
+    margin-top: 14px;
 }
 .action-btn {
     flex: 1;
