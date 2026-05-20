@@ -10,37 +10,54 @@ export async function onRequest(context) {
     }
 
     const headers = {
-        'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148',
+        'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1',
         'Accept':     'application/json, text/plain, */*',
-        'Referer':    'https://map.kakao.com/',
-        'Origin':     'https://map.kakao.com'
+        'Accept-Language': 'ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7',
+        'Referer':    'https://m.map.kakao.com/',
+        'Origin':     'https://m.map.kakao.com',
     };
 
-    // 여러 엔드포인트를 순서대로 시도
     const candidates = [
         `https://place.map.kakao.com/m/place/v/${id}`,
         `https://place.map.kakao.com/m/main/v/${id}`,
         `https://place.map.kakao.com/place/v/${id}`,
+        `https://place.map.kakao.com/m/place/${id}`,
+        `https://place.map.kakao.com/${id}`,
     ];
 
-    let data = null;
+    let data    = null;
     let usedUrl = null;
+    const errors = [];
 
     for (const endpoint of candidates) {
-        const res = await fetch(endpoint, { headers });
-        if (!res.ok) continue;
         try {
-            const raw = await res.json();
-            if (raw && typeof raw === 'object') {
-                data    = raw;
-                usedUrl = endpoint;
-                break;
+            const res = await fetch(endpoint, { headers });
+            const statusCode = res.status;
+
+            if (!res.ok) {
+                errors.push({ url: endpoint, status: statusCode });
+                continue;
             }
-        } catch { /* JSON 파싱 실패 시 다음 URL 시도 */ }
+
+            const text = await res.text();
+            try {
+                const raw = JSON.parse(text);
+                if (raw && typeof raw === 'object') {
+                    data    = raw;
+                    usedUrl = endpoint;
+                    break;
+                }
+                errors.push({ url: endpoint, status: statusCode, issue: 'not an object' });
+            } catch (e) {
+                errors.push({ url: endpoint, status: statusCode, parseError: e.message, preview: text.slice(0, 200) });
+            }
+        } catch (e) {
+            errors.push({ url: endpoint, fetchError: e.message });
+        }
     }
 
     if (!data) {
-        return json({ error: '장소 정보를 가져올 수 없습니다. (모든 엔드포인트 실패)' }, 502);
+        return json({ error: '장소 정보를 가져올 수 없습니다. (모든 엔드포인트 실패)', _errors: errors }, 502);
     }
 
     const basic    = data.basicInfo || data.place || data || {};
@@ -79,8 +96,7 @@ export async function onRequest(context) {
 
     const homepageList = basic.homepageList || [];
     const homepage     = homepageList[0]?.homepage || null;
-
-    const parking = basic.facilityInfo?.parking || null;
+    const parking      = basic.facilityInfo?.parking || null;
 
     return json({
         rating, scorecnt, reviewcnt, menus,
