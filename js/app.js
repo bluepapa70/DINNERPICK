@@ -1,7 +1,6 @@
 const App = {
     location:    null,
     restaurants: [],
-    excluded:    new Set(),
     radius:      1000,
     slot:        null,
     currentResult: null,
@@ -34,14 +33,6 @@ const App = {
         document.getElementById('retry-btn').addEventListener('click', () => {
             this._closeModal();
             setTimeout(() => this._spin(), 320);
-        });
-
-        document.getElementById('exclude-btn').addEventListener('click', () => {
-            if (this.currentResult) {
-                this.excluded.add(this.currentResult.id);
-                this._applyFilter();
-            }
-            this._closeModal();
         });
 
         document.getElementById('navi-btn').addEventListener('click', () => {
@@ -114,7 +105,7 @@ const App = {
     _applyFilter() {
         const countEl = document.getElementById('result-count');
         const spinBtn = document.getElementById('spin-btn');
-        const list    = this.restaurants.filter(r => !this.excluded.has(r.id));
+        const list    = this.restaurants;
 
         this.slot.setRestaurants(list);
 
@@ -163,12 +154,13 @@ const App = {
             document.getElementById('res-walk').textContent     = '-';
         }
 
-        // 카카오맵 링크
+        // 카카오맵 버튼
+        const kakaomapBtn = document.getElementById('kakaomap-btn');
         if (restaurant.place_url) {
-            document.getElementById('res-kakaomap').href = restaurant.place_url;
-            document.getElementById('res-kakaomap-row').classList.remove('hidden');
+            kakaomapBtn.href = restaurant.place_url;
+            kakaomapBtn.style.display = '';
         } else {
-            document.getElementById('res-kakaomap-row').classList.add('hidden');
+            kakaomapBtn.style.display = 'none';
         }
 
         document.getElementById('result-modal').classList.remove('hidden');

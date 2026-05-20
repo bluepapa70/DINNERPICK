@@ -469,7 +469,7 @@ body {
 
 .navi-btn    { background: rgba(201,169,110,0.16); color: var(--gold); border: 1.5px solid rgba(201,169,110,0.42); }
 .retry-btn   { background: var(--gold); color: #2a1a08; box-shadow: 0 4px 0 #5c3e08; font-weight: 900; }
-.exclude-btn { background: rgba(255,255,255,0.06); color: rgba(245,230,208,0.6); border: 1.5px solid rgba(245,230,208,0.16); }
+.kakaomap-btn { background: rgba(201,169,110,0.16); color: var(--gold); border: 1.5px solid rgba(201,169,110,0.42); text-decoration: none; display: flex; align-items: center; justify-content: center; }
 
 .restaurant-info {
     background: rgba(0,0,0,0.28);
