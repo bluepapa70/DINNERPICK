@@ -492,6 +492,18 @@ body {
 .info-icon { font-size: 15px; flex-shrink: 0; margin-top: 1px; }
 .info-row span:last-child { color: rgba(245,230,208,0.82); line-height: 1.4; }
 .info-row.hidden { display: none; }
+.open-info { display: flex; flex-direction: column; gap: 3px; }
+.hours-text { font-size: 12px; opacity: 0.65; }
+.open-badge   { color: #4caf82; font-weight: 700; font-size: 13px; }
+.closed-badge { color: #e05c5c; font-weight: 700; font-size: 13px; }
+.break-badge  { color: #e09a3c; font-weight: 700; font-size: 13px; }
+.info-link {
+    color: var(--gold);
+    font-size: 13px;
+    text-decoration: none;
+    text-underline-offset: 3px;
+}
+.info-link:hover { text-decoration: underline; }
 .menu-list {
     display: flex;
     flex-direction: column;

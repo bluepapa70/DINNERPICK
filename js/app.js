@@ -165,8 +165,8 @@ const App = {
         const chipEl  = document.getElementById('res-cat-chip');
         if (chipEl) chipEl.textContent = leafCat;
 
-        document.getElementById('res-rating-row').classList.add('hidden');
-        document.getElementById('res-menu-row').classList.add('hidden');
+        ['res-open-row','res-rating-row','res-homepage-row','res-parking-row','res-menu-row']
+            .forEach(id => document.getElementById(id).classList.add('hidden'));
 
         document.getElementById('result-modal').classList.remove('hidden');
 
@@ -190,17 +190,49 @@ const App = {
             const data = await res.json();
             if (data.error) return;
 
+            // 영업 상태 + 시간
+            if (data.isOpen !== null) {
+                let statusHtml = '';
+                if (data.isHoliday) {
+                    statusHtml = '<span class="closed-badge">휴무일</span>';
+                } else if (data.isBreak) {
+                    statusHtml = '<span class="break-badge">브레이크타임</span>';
+                } else if (data.isOpen) {
+                    statusHtml = '<span class="open-badge">영업중</span>';
+                } else {
+                    statusHtml = '<span class="closed-badge">영업종료</span>';
+                }
+                document.getElementById('res-open-status').innerHTML = statusHtml;
+                if (data.hours) {
+                    document.getElementById('res-hours').textContent = data.hours;
+                }
+                document.getElementById('res-open-row').classList.remove('hidden');
+            }
+
+            // 별점
             if (data.rating) {
                 const stars = this._renderStars(parseFloat(data.rating));
                 document.getElementById('res-rating').innerHTML =
-                    `${stars} <span style="margin-left:4px;">${data.rating}</span>`
-                    + (data.reviewcnt ? ` <span style="opacity:0.6;font-size:11px;">(리뷰 ${data.reviewcnt})</span>` : '');
+                    `${stars} ${data.rating}`
+                    + (data.reviewcnt ? ` <span style="opacity:0.55;font-size:11px;">(리뷰 ${data.reviewcnt})</span>` : '');
                 document.getElementById('res-rating-row').classList.remove('hidden');
             }
 
+            // 홈페이지
+            if (data.homepage) {
+                document.getElementById('res-homepage').href = data.homepage;
+                document.getElementById('res-homepage-row').classList.remove('hidden');
+            }
+
+            // 주차
+            if (data.parking) {
+                document.getElementById('res-parking').textContent = data.parking;
+                document.getElementById('res-parking-row').classList.remove('hidden');
+            }
+
+            // 메뉴
             if (data.menus && data.menus.length > 0) {
-                const menuEl = document.getElementById('res-menus');
-                menuEl.innerHTML = data.menus.map(m =>
+                document.getElementById('res-menus').innerHTML = data.menus.map(m =>
                     `<div class="menu-item">
                         <span class="menu-item-name">${m.name}</span>
                         ${m.price ? `<span class="menu-item-price">${m.price}</span>` : ''}
