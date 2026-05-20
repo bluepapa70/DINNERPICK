@@ -3,7 +3,6 @@ const App = {
     restaurants: [],
     excluded:    new Set(),
     radius:      1000,
-    category:    'FD6',
     slot:        null,
     currentResult: null,
 
@@ -25,15 +24,6 @@ const App = {
                 document.querySelectorAll('.radius-btn').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
                 this.radius = parseInt(btn.dataset.radius);
-                this._fetchRestaurants();
-            });
-        });
-
-        document.querySelectorAll('.cat-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                this.category = btn.dataset.cat;
                 this._fetchRestaurants();
             });
         });
@@ -102,7 +92,7 @@ const App = {
                 x:        this.location.lng,
                 y:        this.location.lat,
                 radius:   this.radius,
-                category: this.category
+                category: 'FD6'
             });
             const res  = await fetch(`/api/restaurants?${params}`);
             const data = await res.json();

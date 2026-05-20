@@ -108,13 +108,13 @@ body {
     position: relative;
     z-index: 1;
 }
-.radius-selector, .category-filter {
+.radius-selector {
     display: flex;
     gap: 8px;
     flex-wrap: wrap;
     justify-content: center;
 }
-.radius-btn, .cat-btn {
+.radius-btn {
     background: rgba(26,20,14,0.85);
     border: 1px solid var(--border-gold);
     color: var(--text-dim);
@@ -126,12 +126,12 @@ body {
     transition: all 0.22s;
     white-space: nowrap;
 }
-.radius-btn:hover, .cat-btn:hover {
+.radius-btn:hover {
     background: rgba(201,169,110,0.1);
     color: var(--gold);
     border-color: rgba(201,169,110,0.55);
 }
-.radius-btn.active, .cat-btn.active {
+.radius-btn.active {
     background: var(--gold-dark);
     border-color: var(--gold);
     color: var(--gold-bright);
