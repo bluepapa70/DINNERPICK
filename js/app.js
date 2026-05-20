@@ -195,7 +195,11 @@ const App = {
             const res  = await fetch(`/api/place?id=${id}`);
             const data = await res.json();
             console.log('[place] response:', data);
-            if (data.error) { console.warn('[place] API error:', data.error, JSON.stringify(data._errors)); return; }
+            if (data.error) {
+                console.warn('[place] API error:', data.error, JSON.stringify(data._errors));
+                if (data._htmlPreview) console.log('[place] HTML preview:\n', data._htmlPreview);
+                return;
+            }
 
             // 영업 상태 + 시간
             if (data.isOpen !== null) {
