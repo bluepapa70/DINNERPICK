@@ -500,33 +500,6 @@ body {
     transition: opacity 0.15s;
 }
 .info-link:hover { opacity: 0.75; }
-.open-info { display: flex; flex-direction: column; gap: 3px; }
-.hours-text { font-size: 12px; opacity: 0.65; }
-.open-badge   { color: #4caf82; font-weight: 700; font-size: 13px; }
-.closed-badge { color: #e05c5c; font-weight: 700; font-size: 13px; }
-.break-badge  { color: #e09a3c; font-weight: 700; font-size: 13px; }
-.info-link {
-    color: var(--gold);
-    font-size: 13px;
-    text-decoration: none;
-    text-underline-offset: 3px;
-}
-.info-link:hover { text-decoration: underline; }
-.menu-list {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    color: rgba(245,230,208,0.82);
-    font-size: 13px;
-    line-height: 1.4;
-}
-.menu-item {
-    display: flex;
-    justify-content: space-between;
-    gap: 8px;
-}
-.menu-item-name  { flex: 1; }
-.menu-item-price { color: var(--gold); white-space: nowrap; }
 
 /* 미니맵 */
 .mini-map {
@@ -572,8 +545,7 @@ body {
 @media (max-width: 400px) {
     .slot-machine { width: 288px; }
     .title { font-size: 20px; letter-spacing: 4px; }
-    .lever-container { display: none; }
-    .machine-body { padding: 14px 12px; }
+.machine-body { padding: 14px 12px; }
     .spin-btn { padding: 14px 40px; }
     .spin-btn-text { font-size: 15px; }
 }

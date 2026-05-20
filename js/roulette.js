@@ -36,7 +36,6 @@ class SlotMachine {
 
     _resetPosition() {
         if (!this.restaurants.length) return;
-        // 시작: 2번째 복사본 첫 번째 아이템
         const offset = 2 * this.restaurants.length * this.itemHeight;
         this.reel.style.transition = 'none';
         this.reel.style.transform  = `translateY(-${offset}px)`;
@@ -46,29 +45,16 @@ class SlotMachine {
         if (this.isSpinning || !this.restaurants.length) return;
         this.isSpinning = true;
 
-        // 랜덤 타겟
-        const targetIdx  = Math.floor(Math.random() * this.restaurants.length);
-        const target     = this.restaurants[targetIdx];
-
-        // 마지막 복사본에서 타겟 아이템의 절대 인덱스
+        const targetIdx   = Math.floor(Math.random() * this.restaurants.length);
+        const target      = this.restaurants[targetIdx];
         const lastCopyIdx = (this.copies - 1) * this.restaurants.length + targetIdx;
-        // 가운데 줄에 맞추기: 창 높이(270) / 2 - itemHeight / 2 = 90
         const finalOffset = lastCopyIdx * this.itemHeight - 90;
 
-        // 레버 당기기 애니메이션
-        const lever = document.getElementById('lever');
-        if (lever) {
-            lever.classList.add('pulled');
-            setTimeout(() => lever.classList.remove('pulled'), 400);
-        }
-
-        // 스핀 시작
         this.reel.style.transition = 'transform 3.6s cubic-bezier(0.15, 0.85, 0.3, 1)';
         this.reel.style.transform  = `translateY(-${finalOffset}px)`;
 
         setTimeout(() => {
             this.isSpinning = false;
-            // 위치 고정 후 다음 스핀을 위해 리셋
             this.reel.style.transition = 'none';
             this._resetPosition();
             this.onComplete(target);

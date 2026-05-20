@@ -108,19 +108,14 @@ const App = {
             const data = await res.json();
 
             if (data.error) {
-                console.error('API 오류:', data.error, data.status);
                 countEl.textContent = `⚠️ API 오류 (${data.status || res.status}) — Cloudflare 환경변수를 확인해주세요`;
                 spinBtn.disabled = true;
                 return;
             }
 
             this.restaurants = data.documents || [];
-            if (this.restaurants.length > 0) {
-                console.log('[API] 첫 번째 restaurant 샘플:', JSON.stringify(this.restaurants[0]));
-            }
             this._applyFilter();
         } catch (e) {
-            console.error('fetch 오류:', e);
             countEl.textContent = '⚠️ 맛집을 불러오지 못했어요 (네트워크 오류)';
             spinBtn.disabled = false;
         }
