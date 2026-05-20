@@ -28,21 +28,27 @@ body {
     padding-bottom: 40px;
 }
 
-/* ── 배경 분위기 조명 ── */
+/* ── 배경 이미지 ── */
 .bg-stars {
     position: fixed;
     inset: 0;
-    background:
-        radial-gradient(ellipse at 18% 58%, rgba(160,100,30,0.2) 0%, transparent 42%),
-        radial-gradient(ellipse at 15% 85%, rgba(100,60,10,0.14) 0%, transparent 28%),
-        radial-gradient(ellipse at 80% 12%, rgba(60,40,15,0.14) 0%, transparent 32%),
-        radial-gradient(ellipse at 90% 70%, rgba(40,25,8,0.1)  0%, transparent 25%);
+    background-image: url('../images/bg.png');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
     pointer-events: none;
     z-index: 0;
     animation: ambientFlicker 8s ease-in-out infinite alternate;
 }
+/* 배경 위에 어두운 오버레이 — 텍스트 가독성 확보 */
+.bg-stars::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(8, 6, 3, 0.55);
+}
 @keyframes ambientFlicker {
-    from { opacity: 0.85; }
+    from { opacity: 0.9; }
     to   { opacity: 1; }
 }
 
