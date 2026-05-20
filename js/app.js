@@ -170,7 +170,8 @@ const App = {
 
         document.getElementById('result-modal').classList.remove('hidden');
 
-        this._fetchPlaceDetail(restaurant.id);
+        const placeId = restaurant.id || (restaurant.place_url || '').split('/').pop();
+        this._fetchPlaceDetail(placeId);
 
         setTimeout(() => {
             KakaoMapService.initMiniMap(
