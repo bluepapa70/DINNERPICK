@@ -196,7 +196,8 @@ const App = {
             const data = await res.json();
             console.log('[place] response:', data);
             if (data.error) {
-                console.warn('[place] API error:', data.error, JSON.stringify(data._errors));
+                console.warn('[place] API error:', data.error);
+                if (data._debug) console.log('[place] _debug:', JSON.stringify(data._debug, null, 2));
                 if (data._htmlPreview) console.log('[place] HTML preview:\n', data._htmlPreview);
                 return;
             }
