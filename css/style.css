@@ -500,6 +500,7 @@ body {
     overflow: hidden;
     border: 1px solid rgba(201,169,110,0.22);
     background: #0d0b08;
+    filter: invert(92%) hue-rotate(180deg);
 }
 
 /* ── 폭죽 ── */
