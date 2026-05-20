@@ -2,7 +2,7 @@ const App = {
     location:    null,
     restaurants: [],
     excluded:    new Set(),
-    radius:      500,
+    radius:      1000,
     category:    'FD6',
     slot:        null,
     currentResult: null,
@@ -131,7 +131,7 @@ const App = {
         this.slot.setRestaurants(list);
 
         if (list.length > 0) {
-            countEl.textContent = `✨ 주변 맛집 ${list.length}곳 발견!`;
+            countEl.textContent = `✧ 주변 맛집 ${list.length}곳 발견!`;
             spinBtn.disabled    = false;
         } else {
             countEl.textContent = '😢 맛집이 없어요. 반경을 늘려보세요!';
@@ -161,6 +161,10 @@ const App = {
         document.getElementById('res-distance').textContent = restaurant.distance ? `약 ${restaurant.distance}m` : '-';
         document.getElementById('res-phone').textContent    = restaurant.phone || '정보 없음';
 
+        const leafCat = (restaurant.category_name || '').split('>').pop().trim();
+        const chipEl  = document.getElementById('res-cat-chip');
+        if (chipEl) chipEl.textContent = leafCat;
+
         document.getElementById('result-modal').classList.remove('hidden');
 
         setTimeout(() => {
@@ -182,7 +186,7 @@ const App = {
     _launchConfetti() {
         const container = document.getElementById('confetti-container');
         container.innerHTML = '';
-        const colors = ['#ff6b9d', '#ffd93d', '#6bcb77', '#4d96ff', '#ff922b', '#cc5de8', '#20c997'];
+        const colors = ['#c9a96e', '#d4b483', '#f0d060', '#e8c87a', '#fff3d0', '#b8942e', '#f5dfa0'];
 
         for (let i = 0; i < 60; i++) {
             const el = document.createElement('div');
