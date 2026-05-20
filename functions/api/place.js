@@ -1,6 +1,6 @@
 /**
  * Cloudflare Pages Function — 카카오 장소 상세 정보 프록시
- * place.map.kakao.com/{id} HTML에서 데이터 추출
+ * 전략: HTML og:url에서 canonical ID 추출 → 번들에서 API 경로 탐색
  */
 export async function onRequest(context) {
     const url = new URL(context.request.url);
@@ -10,96 +10,118 @@ export async function onRequest(context) {
         return json({ error: 'id가 필요합니다.' }, 400);
     }
 
-    const headers = {
-        'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1',
-        'Accept':          'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+    const mobileUA = 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1';
+
+    // ── 1. HTML 페이지에서 canonical ID + 번들 URL 추출 ──────────────────────
+    const htmlRes = await fetch(`https://place.map.kakao.com/${id}`, {
+        headers: {
+            'User-Agent':      mobileUA,
+            'Accept':          'text/html,application/xhtml+xml,*/*;q=0.8',
+            'Accept-Language': 'ko-KR,ko;q=0.9',
+        }
+    });
+
+    let canonicalId = id;
+    let bundleUrl   = null;
+    let finalUrl    = htmlRes.url;
+
+    if (htmlRes.ok) {
+        const html = await htmlRes.text();
+
+        // og:url에서 canonical ID 추출
+        const ogUrl = html.match(/<meta\s+property="og:url"\s+content="[^"]*\/(\d+)"/i);
+        if (ogUrl) canonicalId = ogUrl[1];
+
+        // 번들 URL 추출
+        const bundleMatch = html.match(/src="(https:\/\/t1\.kakaocdn\.net\/kakaomapweb\/[^"]+\/index\.js)"/);
+        if (bundleMatch) bundleUrl = bundleMatch[1];
+    }
+
+    // ── 2. 번들 첫 300KB에서 API 경로 패턴 탐색 ───────────────────────────
+    let foundApiPaths = [];
+    if (bundleUrl) {
+        try {
+            const bRes = await fetch(bundleUrl, {
+                headers: {
+                    'User-Agent': mobileUA,
+                    'Range':      'bytes=0-300000',
+                }
+            });
+            if (bRes.ok || bRes.status === 206) {
+                const chunk = await bRes.text();
+                // "/place/v/", "/m/place/", "/api/place" 등의 패턴 탐색
+                const re = /["'`](\/[a-z/]+(?:place|detail|info)[a-z/]*)["'`$]/gi;
+                let m;
+                const seen = new Set();
+                while ((m = re.exec(chunk)) !== null) {
+                    const p = m[1];
+                    if (!seen.has(p) && p.length < 60) {
+                        seen.add(p);
+                        foundApiPaths.push(p);
+                    }
+                    if (seen.size >= 30) break;
+                }
+            }
+        } catch { /* 번들 로드 실패 무시 */ }
+    }
+
+    // ── 3. canonical ID로 API 후보 시도 ────────────────────────────────────
+    const apiHeaders = {
+        'User-Agent':      mobileUA,
+        'Accept':          'application/json, */*',
         'Accept-Language': 'ko-KR,ko;q=0.9',
-        'Referer':         'https://m.map.kakao.com/',
+        'Referer':         `https://place.map.kakao.com/${canonicalId}`,
+        'Origin':          'https://place.map.kakao.com',
     };
 
-    const res = await fetch(`https://place.map.kakao.com/${id}`, { headers });
-    if (!res.ok) {
-        return json({ error: 'HTML 페이지 요청 실패', status: res.status }, 502);
-    }
-
-    const html = await res.text();
-
-    // ── 1. JSON-LD (schema.org) ──────────────────────────────────────────────
-    const ldMatch = html.match(/<script[^>]*type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/i);
-    if (ldMatch) {
-        try {
-            const ld     = JSON.parse(ldMatch[1]);
-            const result = extractFromLd(ld);
-            result._source = 'json-ld';
-            return json(result);
-        } catch { /* fall through */ }
-    }
-
-    // ── 2. window.__DATA__ 또는 유사 전역 변수 ─────────────────────────────
-    const dataPatterns = [
-        /window\.__DATA__\s*=\s*(\{[\s\S]*?\});\s*(?:window|<\/script>)/i,
-        /window\.__PRELOADED_STATE__\s*=\s*(\{[\s\S]*?\});\s*(?:window|<\/script>)/i,
-        /window\.__INITIAL_STATE__\s*=\s*(\{[\s\S]*?\});\s*(?:window|<\/script>)/i,
-        /\bPLACE_DATA\s*=\s*(\{[\s\S]*?\});/i,
+    // 번들에서 찾은 경로 + 기본 후보들
+    const baseCandidates = [
+        `/m/place/v/`,
+        `/m/main/v/`,
+        `/place/v/`,
+        `/m/place/`,
+        `/place/`,
     ];
-    for (const pattern of dataPatterns) {
-        const m = html.match(pattern);
-        if (m) {
+
+    const bundleCandidates = foundApiPaths
+        .filter(p => /\/(?:place|main)\/(?:v\/)?$/.test(p + '/'))
+        .map(p => p.replace(/\/$/, '') + '/');
+
+    const allPaths = [...new Set([...bundleCandidates, ...baseCandidates])];
+
+    for (const path of allPaths) {
+        for (const tryId of [...new Set([canonicalId, id])]) {
+            const endpoint = `https://place.map.kakao.com${path}${tryId}`;
             try {
-                const raw    = JSON.parse(m[1]);
-                const result = extractFromRaw(raw);
-                result._source = 'global-var';
-                return json(result);
-            } catch { /* fall through */ }
+                const res = await fetch(endpoint, { headers: apiHeaders });
+                if (!res.ok) continue;
+                const text = await res.text();
+                try {
+                    const raw = JSON.parse(text);
+                    if (raw && typeof raw === 'object' && !raw.error) {
+                        return json(buildResult(raw, { usedUrl: endpoint, canonicalId }));
+                    }
+                } catch { /* not JSON */ }
+            } catch { /* fetch failed */ }
         }
     }
 
-    // ── 3. 디버그: HTML 미리보기 반환 ─────────────────────────────────────
+    // ── 4. 완전 실패: 디버그 반환 ──────────────────────────────────────────
     return json({
-        error: '파싱 가능한 데이터 없음',
-        _htmlPreview: html.slice(0, 3000)
+        error: '장소 상세 정보를 가져올 수 없습니다.',
+        _debug: {
+            originalId:  id,
+            canonicalId,
+            finalUrl,
+            bundleUrl,
+            foundApiPaths,
+            triedPaths:  allPaths,
+        }
     }, 200);
 }
 
-// JSON-LD (schema.org) 에서 추출
-function extractFromLd(ld) {
-    const result = {
-        rating: null, scorecnt: 0, reviewcnt: 0,
-        menus: [], isOpen: null, isBreak: false, isHoliday: false,
-        hours: null, homepage: null, parking: null
-    };
-
-    if (ld.aggregateRating) {
-        const r = ld.aggregateRating;
-        result.rating    = r.ratingValue != null ? parseFloat(r.ratingValue).toFixed(1) : null;
-        result.reviewcnt = Number(r.reviewCount || r.ratingCount || 0);
-        result.scorecnt  = result.reviewcnt;
-    }
-
-    if (ld.openingHours) {
-        result.hours = Array.isArray(ld.openingHours)
-            ? ld.openingHours.join(' / ')
-            : String(ld.openingHours);
-    }
-
-    if (ld.url) result.homepage = ld.url;
-    if (ld.sameAs) result.homepage = result.homepage || (Array.isArray(ld.sameAs) ? ld.sameAs[0] : ld.sameAs);
-
-    if (ld.hasMenu && typeof ld.hasMenu === 'string') {
-        result.homepage = result.homepage || ld.hasMenu;
-    }
-
-    if (ld.servesCuisine) {
-        const cuisines = Array.isArray(ld.servesCuisine) ? ld.servesCuisine : [ld.servesCuisine];
-        result.menus = cuisines.slice(0, 5).map(c => ({ name: c, price: '' }));
-    }
-
-    return result;
-}
-
-// 원시 JS 객체에서 추출 (window.__DATA__ 등)
-function extractFromRaw(raw) {
-    const basic    = raw.basicInfo || raw.place || raw || {};
+function buildResult(data, meta = {}) {
+    const basic    = data.basicInfo || data.place || data || {};
     const feedback = basic.feedback || {};
     const menuinfo = basic.menuinfo || {};
     const openHour = basic.openHour || {};
@@ -125,7 +147,7 @@ function extractFromRaw(raw) {
         const timeList = periodList[0].timeList || [];
         if (timeList.length > 0) {
             const t   = timeList[0];
-            const fmt = s => s ? `${s.slice(0,2)}:${s.slice(2,4)}` : '';
+            const fmt = s => s ? `${s.slice(0, 2)}:${s.slice(2, 4)}` : '';
             const day = t.dayOfWeek ? `${t.dayOfWeek} ` : '';
             hours     = `${day}${fmt(t.beginTime)} ~ ${fmt(t.endTime)}`;
             const brk = timeList.find(x => x.timeName?.includes('브레이크'));
@@ -133,11 +155,15 @@ function extractFromRaw(raw) {
         }
     }
 
-    const homepageList = basic.homepageList || [];
-    const homepage     = homepageList[0]?.homepage || null;
-    const parking      = basic.facilityInfo?.parking || null;
+    const homepage = (basic.homepageList || [])[0]?.homepage || null;
+    const parking  = basic.facilityInfo?.parking || null;
 
-    return { rating, scorecnt, reviewcnt, menus, isOpen, isBreak, isHoliday, hours, homepage, parking };
+    return {
+        rating, scorecnt, reviewcnt, menus,
+        isOpen, isBreak, isHoliday, hours,
+        homepage, parking,
+        _debug: meta
+    };
 }
 
 function json(data, status = 200) {
