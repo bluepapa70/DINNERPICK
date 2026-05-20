@@ -170,6 +170,7 @@ const App = {
 
         document.getElementById('result-modal').classList.remove('hidden');
 
+        console.log('[restaurant] 전체 필드:', JSON.stringify(restaurant));
         const placeId = restaurant.id || (restaurant.place_url || '').split('/').pop();
         this._fetchPlaceDetail(placeId);
 
