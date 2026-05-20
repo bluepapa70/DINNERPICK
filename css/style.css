@@ -393,9 +393,9 @@ body {
     background: linear-gradient(135deg, #d4b483, #c9a96e);
     color: #2a1a08;
     font-family: 'Noto Sans KR', sans-serif;
-    font-size: 15px;
+    font-size: 20px;
     font-weight: 900;
-    padding: 8px 16px;
+    padding: 10px 18px;
     border-radius: 20px;
     line-height: 1.5;
 }
