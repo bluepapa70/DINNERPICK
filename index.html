@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🍽️ 오늘 저녁 뭐 먹지?</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+    <div class="bg-stars"></div>
+
+    <header class="header">
+        <h1 class="title">🍽️ 오늘 저녁 뭐 먹지?</h1>
+        <p class="subtitle">희연이의 저녁 메뉴 결정기</p>
+    </header>
+
+    <div class="location-bar">
+        <span>📍</span>
+        <span id="location-text">위치를 불러오는 중...</span>
+        <button id="refresh-location" class="icon-btn" title="위치 새로고침">🔄</button>
+    </div>
+
+    <div class="controls">
+        <div class="radius-selector">
+            <button class="radius-btn active" data-radius="500">500m</button>
+            <button class="radius-btn" data-radius="1000">1km</button>
+            <button class="radius-btn" data-radius="2000">2km</button>
+        </div>
+        <div class="category-filter">
+            <button class="cat-btn active" data-cat="FD6">🍽️ 전체</button>
+            <button class="cat-btn" data-cat="한식">🍚 한식</button>
+            <button class="cat-btn" data-cat="중식">🥢 중식</button>
+            <button class="cat-btn" data-cat="일식">🍱 일식</button>
+            <button class="cat-btn" data-cat="분식">🍜 분식</button>
+            <button class="cat-btn" data-cat="치킨">🍗 치킨</button>
+        </div>
+    </div>
+
+    <!-- 슬롯머신 -->
+    <div class="slot-machine-wrapper">
+        <div class="slot-machine">
+
+            <!-- 머신 상단 -->
+            <div class="machine-top">
+                <div class="light-row">
+                    <span class="light"></span>
+                    <span class="light"></span>
+                    <span class="light"></span>
+                    <span class="light"></span>
+                    <span class="light"></span>
+                </div>
+                <div class="machine-title">DINNER PICK</div>
+            </div>
+
+            <!-- 릴 영역 -->
+            <div class="machine-body">
+                <div class="reel-container">
+                    <div class="reel-window">
+                        <div id="reel" class="reel"></div>
+                        <div class="reel-center-highlight"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 하단 버튼 영역 -->
+            <div class="machine-bottom">
+                <div id="result-count" class="result-count">위치 확인 중...</div>
+                <button id="spin-btn" class="spin-btn" disabled>
+                    <span class="spin-btn-text">🎰 돌려!</span>
+                </button>
+            </div>
+
+            <!-- 사이드 레버 -->
+            <div class="lever-container">
+                <div class="lever" id="lever">
+                    <div class="lever-ball"></div>
+                    <div class="lever-rod"></div>
+                    <div class="lever-base"></div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- 결과 모달 -->
+    <div id="result-modal" class="modal hidden">
+        <div class="modal-overlay" id="modal-overlay"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="winner-badge">🎉 오늘의 선택!</div>
+                <button class="modal-close" id="modal-close">✕</button>
+            </div>
+
+            <div class="restaurant-name" id="res-name">-</div>
+            <div class="restaurant-category" id="res-category">-</div>
+
+            <div class="restaurant-info">
+                <div class="info-row">
+                    <span class="info-icon">📍</span>
+                    <span id="res-address">-</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-icon">📏</span>
+                    <span id="res-distance">-</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-icon">📞</span>
+                    <span id="res-phone">-</span>
+                </div>
+            </div>
+
+            <div id="mini-map" class="mini-map"></div>
+
+            <div class="modal-actions">
+                <button class="action-btn kakao-btn" id="navi-btn">🗺️ 길 찾기</button>
+                <button class="action-btn retry-btn" id="retry-btn">🔄 다시!</button>
+                <button class="action-btn exclude-btn" id="exclude-btn">🚫 제외</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 위치 오류 모달 -->
+    <div id="location-modal" class="modal hidden">
+        <div class="modal-overlay"></div>
+        <div class="modal-content modal-small">
+            <div class="modal-header">
+                <div class="winner-badge" style="background: linear-gradient(135deg,#ff6b9d,#ff4081);color:white;">📍 위치 권한 필요</div>
+            </div>
+            <p style="color:rgba(255,255,255,0.8);font-size:14px;line-height:1.6;margin:16px 0;">
+                주변 맛집을 찾으려면<br>위치 접근 권한이 필요해요!<br><br>
+                브라우저 주소창 옆 🔒 아이콘을 눌러<br>위치 권한을 허용해주세요.
+            </p>
+            <button class="action-btn retry-btn" id="location-retry" style="width:100%;">🔄 다시 시도</button>
+        </div>
+    </div>
+
+    <div id="confetti-container"></div>
+
+    <!-- 카카오맵 SDK: YOUR_KAKAO_JS_KEY 부분을 실제 JavaScript 앱 키로 교체 -->
+    <script type="text/javascript"
+        src="//dapi.kakao.com/v2/maps/sdk.js?appkey=YOUR_KAKAO_JS_KEY&libraries=services">
+    </script>
+    <script src="js/location.js"></script>
+    <script src="js/kakao-map.js"></script>
+    <script src="js/roulette.js"></script>
+    <script src="js/app.js"></script>
+
+</body>
+</html>

@@ -1,0 +1,551 @@
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Noto+Sans+KR:wght@400;700;900&display=swap');
+
+:root {
+    --bg: #0d0020;
+    --frame-gold: #f7c948;
+    --frame-dark: #c9971a;
+    --machine-body: #1a0533;
+    --machine-body2: #2d1b69;
+    --reel-bg: #08001a;
+    --accent: #ff6b9d;
+    --accent2: #00e5ff;
+    --text: #ffffff;
+    --text-dim: rgba(255,255,255,0.55);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Noto Sans KR', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    overflow-x: hidden;
+    padding-bottom: 40px;
+}
+
+/* ── 배경 별 ── */
+.bg-stars {
+    position: fixed;
+    inset: 0;
+    background-image:
+        radial-gradient(circle, rgba(255,255,255,0.9) 1px, transparent 1px),
+        radial-gradient(circle, rgba(255,255,255,0.6) 1px, transparent 1px),
+        radial-gradient(circle, rgba(255,255,255,0.4) 1px, transparent 1px);
+    background-size: 180px 180px, 280px 280px, 400px 400px;
+    background-position: 0 0, 90px 90px, 200px 150px;
+    animation: twinkle 5s ease-in-out infinite alternate;
+    pointer-events: none;
+    z-index: 0;
+}
+@keyframes twinkle {
+    from { opacity: 0.12; }
+    to   { opacity: 0.22; }
+}
+
+/* ── 헤더 ── */
+.header {
+    text-align: center;
+    padding: 30px 20px 12px;
+    position: relative;
+    z-index: 1;
+}
+.title {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 17px;
+    color: var(--frame-gold);
+    text-shadow: 0 0 20px rgba(247,201,72,0.8), 0 0 50px rgba(247,201,72,0.3);
+    margin-bottom: 10px;
+    letter-spacing: 1px;
+    line-height: 1.6;
+}
+.subtitle {
+    color: var(--text-dim);
+    font-size: 13px;
+}
+
+/* ── 위치 바 ── */
+.location-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 24px;
+    padding: 8px 18px;
+    margin: 10px 20px;
+    font-size: 13px;
+    position: relative;
+    z-index: 1;
+    max-width: 360px;
+    width: calc(100% - 40px);
+}
+.icon-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+    padding: 2px 6px;
+    margin-left: auto;
+    transition: transform 0.4s;
+    line-height: 1;
+}
+.icon-btn:hover { transform: rotate(180deg); }
+
+/* ── 컨트롤 ── */
+.controls {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    align-items: center;
+    margin: 8px 20px 16px;
+    position: relative;
+    z-index: 1;
+}
+.radius-selector, .category-filter {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+.radius-btn, .cat-btn {
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.18);
+    color: var(--text);
+    border-radius: 24px;
+    padding: 7px 14px;
+    cursor: pointer;
+    font-size: 12px;
+    font-family: 'Noto Sans KR', sans-serif;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+.radius-btn:hover, .cat-btn:hover {
+    background: rgba(255,107,157,0.25);
+    border-color: var(--accent);
+}
+.radius-btn.active, .cat-btn.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    box-shadow: 0 0 14px rgba(255,107,157,0.55);
+    font-weight: 700;
+}
+
+/* ── 슬롯머신 래퍼 ── */
+.slot-machine-wrapper {
+    position: relative;
+    z-index: 1;
+    margin-top: 4px;
+}
+
+/* ── 슬롯머신 ── */
+.slot-machine {
+    position: relative;
+    width: 310px;
+}
+
+/* 머신 상단 */
+.machine-top {
+    background: linear-gradient(180deg, #ffd966, #f7c948 50%, #f0a800);
+    border-radius: 20px 20px 0 0;
+    padding: 14px 20px 10px;
+    text-align: center;
+    border: 4px solid var(--frame-dark);
+    border-bottom: none;
+    box-shadow: inset 0 2px 6px rgba(255,255,255,0.4);
+}
+.light-row {
+    display: flex;
+    justify-content: center;
+    gap: 14px;
+    margin-bottom: 10px;
+}
+.light {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.4);
+}
+.light:nth-child(1) { background: #ff3333; animation: blink 0.7s 0.0s ease-in-out infinite alternate; }
+.light:nth-child(2) { background: #ffdd00; animation: blink 0.7s 0.14s ease-in-out infinite alternate; }
+.light:nth-child(3) { background: #33ff55; animation: blink 0.7s 0.28s ease-in-out infinite alternate; }
+.light:nth-child(4) { background: #3399ff; animation: blink 0.7s 0.42s ease-in-out infinite alternate; }
+.light:nth-child(5) { background: #ff33ff; animation: blink 0.7s 0.56s ease-in-out infinite alternate; }
+@keyframes blink {
+    from { opacity: 0.25; box-shadow: none; }
+    to   { opacity: 1;    box-shadow: 0 0 10px 2px currentColor; }
+}
+.machine-title {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 10px;
+    color: #7a4800;
+    letter-spacing: 3px;
+    text-shadow: 0 1px 0 rgba(255,255,255,0.5);
+}
+
+/* 머신 바디 */
+.machine-body {
+    background: linear-gradient(180deg, #200a4a, #1a0533);
+    border-left: 4px solid var(--frame-dark);
+    border-right: 4px solid var(--frame-dark);
+    padding: 18px 18px;
+}
+.reel-container {
+    background: var(--reel-bg);
+    border-radius: 14px;
+    border: 3px solid var(--frame-gold);
+    box-shadow:
+        inset 0 0 40px rgba(0,0,0,0.9),
+        0 0 20px rgba(247,201,72,0.25);
+    overflow: hidden;
+    position: relative;
+}
+
+/* 릴 윈도우 */
+.reel-window {
+    height: 270px;   /* 3 items × 90px */
+    overflow: hidden;
+    position: relative;
+}
+
+/* 상단/하단 페이드 마스크 */
+.reel-window::before,
+.reel-window::after {
+    content: '';
+    position: absolute;
+    left: 0; right: 0;
+    height: 100px;
+    z-index: 3;
+    pointer-events: none;
+}
+.reel-window::before {
+    top: 0;
+    background: linear-gradient(to bottom, var(--reel-bg) 0%, transparent 100%);
+}
+.reel-window::after {
+    bottom: 0;
+    background: linear-gradient(to top, var(--reel-bg) 0%, transparent 100%);
+}
+
+/* 중앙 선택 하이라이트 */
+.reel-center-highlight {
+    position: absolute;
+    top: 50%;
+    left: 0; right: 0;
+    height: 92px;
+    transform: translateY(-50%);
+    border-top: 2px solid rgba(255,107,157,0.7);
+    border-bottom: 2px solid rgba(255,107,157,0.7);
+    background: rgba(255,107,157,0.07);
+    z-index: 2;
+    pointer-events: none;
+    box-shadow: inset 0 0 20px rgba(255,107,157,0.1);
+}
+
+/* 릴 자체 */
+.reel {
+    display: flex;
+    flex-direction: column;
+    will-change: transform;
+}
+
+/* 릴 아이템 */
+.reel-item {
+    height: 90px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 0 12px;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    flex-shrink: 0;
+}
+.reel-item.empty {
+    color: var(--text-dim);
+    font-size: 13px;
+}
+.reel-emoji { font-size: 30px; line-height: 1; }
+.reel-name {
+    font-size: 15px;
+    font-weight: 700;
+    color: #fff;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 240px;
+}
+.reel-cat {
+    font-size: 11px;
+    color: var(--text-dim);
+}
+
+/* 머신 하단 */
+.machine-bottom {
+    background: linear-gradient(180deg, #1a0533, #2d1b69);
+    border: 4px solid var(--frame-dark);
+    border-top: 2px solid rgba(247,201,72,0.3);
+    border-radius: 0 0 20px 20px;
+    padding: 18px 20px 22px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+}
+.result-count {
+    color: var(--accent2);
+    font-size: 12px;
+    min-height: 18px;
+}
+
+/* 돌려! 버튼 */
+.spin-btn {
+    background: linear-gradient(135deg, #ff6b9d 0%, #ff4081 100%);
+    border: none;
+    border-radius: 50px;
+    padding: 15px 46px;
+    cursor: pointer;
+    box-shadow: 0 6px 0 #b5154f, 0 0 30px rgba(255,107,157,0.5);
+    transition: transform 0.1s, box-shadow 0.1s;
+    position: relative;
+    top: 0;
+}
+.spin-btn:hover:not(:disabled) {
+    box-shadow: 0 8px 0 #b5154f, 0 0 45px rgba(255,107,157,0.7);
+    transform: translateY(-2px);
+}
+.spin-btn:active:not(:disabled) {
+    box-shadow: 0 2px 0 #b5154f;
+    transform: translateY(4px);
+}
+.spin-btn:disabled {
+    background: linear-gradient(135deg, #444, #2a2a2a);
+    box-shadow: 0 6px 0 #111;
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+.spin-btn-text {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 13px;
+    color: #fff;
+    text-shadow: 0 2px 0 rgba(0,0,0,0.35);
+    pointer-events: none;
+}
+
+/* ── 사이드 레버 ── */
+.lever-container {
+    position: absolute;
+    right: -52px;
+    top: 45%;
+    transform: translateY(-50%);
+}
+.lever {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    cursor: pointer;
+    transform-origin: bottom center;
+    transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1);
+}
+.lever.pulled { transform: rotate(35deg); }
+.lever-ball {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, #ff8fb5, #c0244d);
+    box-shadow: 0 0 18px rgba(255,107,157,0.7), 0 4px 8px rgba(0,0,0,0.4);
+    margin-bottom: 2px;
+}
+.lever-rod {
+    width: 8px;
+    height: 90px;
+    background: linear-gradient(90deg, #666, #ddd 40%, #888);
+    border-radius: 4px;
+}
+.lever-base {
+    width: 24px;
+    height: 12px;
+    background: linear-gradient(180deg, #c9971a, #f7c948);
+    border-radius: 4px;
+    margin-top: 2px;
+}
+
+/* ── 모달 공통 ── */
+.modal {
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+.modal.hidden { display: none; }
+
+.modal-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.82);
+    backdrop-filter: blur(5px);
+}
+.modal-content {
+    position: relative;
+    background: linear-gradient(145deg, #1a0533 0%, #2d1b69 100%);
+    border: 3px solid var(--frame-gold);
+    border-radius: 24px;
+    padding: 28px;
+    max-width: 380px;
+    width: 100%;
+    box-shadow: 0 0 60px rgba(247,201,72,0.25), 0 24px 60px rgba(0,0,0,0.6);
+    animation: modalPop 0.38s cubic-bezier(0.34,1.56,0.64,1) both;
+}
+.modal-small { max-width: 320px; text-align: center; }
+
+@keyframes modalPop {
+    from { transform: scale(0.5) translateY(40px); opacity: 0; }
+    to   { transform: scale(1)   translateY(0);    opacity: 1; }
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+.winner-badge {
+    background: linear-gradient(135deg, #ffd966, #f7c948);
+    color: #7a4800;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 8px;
+    padding: 8px 14px;
+    border-radius: 20px;
+    line-height: 1.5;
+}
+.modal-close {
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.15);
+    color: #fff;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 15px;
+    transition: background 0.2s;
+    flex-shrink: 0;
+}
+.modal-close:hover { background: rgba(255,255,255,0.22); }
+
+/* 결과 모달 내용 */
+.restaurant-name {
+    font-size: 22px;
+    font-weight: 900;
+    color: #fff;
+    margin-bottom: 5px;
+    line-height: 1.3;
+    word-break: keep-all;
+}
+.restaurant-category {
+    color: var(--accent);
+    font-size: 13px;
+    margin-bottom: 16px;
+    font-weight: 700;
+}
+.restaurant-info {
+    background: rgba(0,0,0,0.35);
+    border-radius: 14px;
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+    margin-bottom: 16px;
+}
+.info-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 13px;
+}
+.info-icon { font-size: 15px; flex-shrink: 0; margin-top: 1px; }
+.info-row span:last-child { color: rgba(255,255,255,0.85); line-height: 1.4; }
+
+/* 미니맵 */
+.mini-map {
+    height: 185px;
+    border-radius: 14px;
+    overflow: hidden;
+    margin-bottom: 16px;
+    border: 2px solid rgba(255,255,255,0.1);
+    background: #111;
+}
+
+/* 액션 버튼 */
+.modal-actions {
+    display: flex;
+    gap: 8px;
+}
+.action-btn {
+    flex: 1;
+    border: none;
+    border-radius: 12px;
+    padding: 13px 6px;
+    cursor: pointer;
+    font-size: 12px;
+    font-family: 'Noto Sans KR', sans-serif;
+    font-weight: 700;
+    transition: transform 0.15s, filter 0.15s, box-shadow 0.15s;
+    white-space: nowrap;
+}
+.action-btn:hover  { transform: translateY(-2px); filter: brightness(1.12); }
+.action-btn:active { transform: translateY(0);    filter: brightness(0.95); }
+
+.kakao-btn   { background: #fee500; color: #3c1e1e; box-shadow: 0 4px 0 #c8b400; }
+.retry-btn   { background: var(--accent); color: #fff; box-shadow: 0 4px 0 #b5154f; }
+.exclude-btn { background: rgba(255,255,255,0.1); color: #fff; border: 1px solid rgba(255,255,255,0.2); }
+
+/* ── 폭죽 ── */
+#confetti-container {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 300;
+    overflow: hidden;
+}
+.confetti-piece {
+    position: absolute;
+    top: -20px;
+    animation: confettiFall linear forwards;
+    border-radius: 2px;
+}
+@keyframes confettiFall {
+    0%   { transform: translateY(-20px) rotate(0deg);   opacity: 1; }
+    80%  { opacity: 1; }
+    100% { transform: translateY(105vh) rotate(720deg); opacity: 0; }
+}
+
+/* ── 스피닝 상태 버튼 텍스트 ── */
+.spin-btn.spinning .spin-btn-text::after {
+    content: ' ▶▶';
+    animation: dotPulse 0.5s infinite alternate;
+}
+@keyframes dotPulse {
+    from { opacity: 0.4; }
+    to   { opacity: 1; }
+}
+
+/* ── 반응형 ── */
+@media (max-width: 400px) {
+    .slot-machine { width: 280px; }
+    .title { font-size: 13px; }
+    .lever-container { display: none; }
+    .machine-body { padding: 14px 12px; }
+    .spin-btn { padding: 14px 36px; }
+    .spin-btn-text { font-size: 11px; }
+}
+@media (max-width: 340px) {
+    .slot-machine { width: 250px; }
+}
