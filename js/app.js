@@ -115,6 +115,9 @@ const App = {
             }
 
             this.restaurants = data.documents || [];
+            if (this.restaurants.length > 0) {
+                console.log('[API] 첫 번째 restaurant 샘플:', JSON.stringify(this.restaurants[0]));
+            }
             this._applyFilter();
         } catch (e) {
             console.error('fetch 오류:', e);
