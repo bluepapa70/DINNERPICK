@@ -1,126 +1,79 @@
 /**
  * Cloudflare Pages Function — 카카오 장소 상세 정보 프록시
- * 전략: HTML og:url에서 canonical ID 추출 → 번들에서 API 경로 탐색
  */
 export async function onRequest(context) {
     const url = new URL(context.request.url);
     const id  = url.searchParams.get('id');
 
-    if (!id) {
-        return json({ error: 'id가 필요합니다.' }, 400);
-    }
+    if (!id) return json({ error: 'id가 필요합니다.' }, 400);
 
-    const mobileUA = 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1';
+    const kakaoKey = context.env.KAKAO_REST_API_KEY || '';
 
-    // ── 1. HTML 페이지에서 canonical ID + 번들 URL 추출 ──────────────────────
-    const htmlRes = await fetch(`https://place.map.kakao.com/${id}`, {
-        headers: {
-            'User-Agent':      mobileUA,
-            'Accept':          'text/html,application/xhtml+xml,*/*;q=0.8',
-            'Accept-Language': 'ko-KR,ko;q=0.9',
-        }
-    });
-
-    let canonicalId = id;
-    let bundleUrl   = null;
-    let finalUrl    = htmlRes.url;
-
-    if (htmlRes.ok) {
-        const html = await htmlRes.text();
-
-        // og:url에서 canonical ID 추출
-        const ogUrl = html.match(/<meta\s+property="og:url"\s+content="[^"]*\/(\d+)"/i);
-        if (ogUrl) canonicalId = ogUrl[1];
-
-        // 번들 URL 추출
-        const bundleMatch = html.match(/src="(https:\/\/t1\.kakaocdn\.net\/kakaomapweb\/[^"]+\/index\.js)"/);
-        if (bundleMatch) bundleUrl = bundleMatch[1];
-    }
-
-    // ── 2. 번들 첫 300KB에서 API 경로 패턴 탐색 ───────────────────────────
-    let foundApiPaths = [];
-    if (bundleUrl) {
-        try {
-            const bRes = await fetch(bundleUrl, {
-                headers: {
-                    'User-Agent': mobileUA,
-                    'Range':      'bytes=0-300000',
-                }
-            });
-            if (bRes.ok || bRes.status === 206) {
-                const chunk = await bRes.text();
-                // "/place/v/", "/m/place/", "/api/place" 등의 패턴 탐색
-                const re = /["'`](\/[a-z/]+(?:place|detail|info)[a-z/]*)["'`$]/gi;
-                let m;
-                const seen = new Set();
-                while ((m = re.exec(chunk)) !== null) {
-                    const p = m[1];
-                    if (!seen.has(p) && p.length < 60) {
-                        seen.add(p);
-                        foundApiPaths.push(p);
-                    }
-                    if (seen.size >= 30) break;
-                }
-            }
-        } catch { /* 번들 로드 실패 무시 */ }
-    }
-
-    // ── 3. canonical ID로 API 후보 시도 ────────────────────────────────────
-    const apiHeaders = {
-        'User-Agent':      mobileUA,
-        'Accept':          'application/json, */*',
+    // SDK 버전은 index.html의 kakao.js URL에서 확인 (4.4.24)
+    const baseHeaders = {
+        'User-Agent':      'Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1',
+        'Accept':          'application/json, text/plain, */*',
         'Accept-Language': 'ko-KR,ko;q=0.9',
-        'Referer':         `https://place.map.kakao.com/${canonicalId}`,
+        'KA':              'sdk/4.4.24 os/web origin/place.map.kakao.com',
+        'Referer':         'https://place.map.kakao.com/',
         'Origin':          'https://place.map.kakao.com',
     };
 
-    // 번들에서 찾은 경로 + 기본 후보들
-    const baseCandidates = [
-        `/m/place/v/`,
-        `/m/main/v/`,
-        `/place/v/`,
-        `/m/place/`,
-        `/place/`,
+    const withKey = { ...baseHeaders, 'Authorization': `KakaoAK ${kakaoKey}` };
+
+    // 시도할 엔드포인트 목록 (응답 구조가 다를 수 있어 모두 시도)
+    const candidates = [
+        // 구형 map.kakao.com API
+        { url: `https://map.kakao.com/actions/getPlaceInfo?id=${id}&lang=ko`,   h: baseHeaders },
+        { url: `https://map.kakao.com/app/place/basic?id=${id}&lang=ko`,        h: baseHeaders },
+        { url: `https://map.kakao.com/app/place/all?id=${id}&lang=ko`,          h: baseHeaders },
+        { url: `https://map.kakao.com/m/search/placeinfo?id=${id}`,             h: baseHeaders },
+        // REST API 키 사용 (dapi)
+        { url: `https://dapi.kakao.com/v2/local/place/${id}`,                  h: withKey },
+        { url: `https://dapi.kakao.com/v1/places/${id}`,                       h: withKey },
+        // place.map.kakao.com 변형
+        { url: `https://place.map.kakao.com/m/place/v/${id}`,  h: { ...baseHeaders, 'KA': 'sdk/4.4.24 os/ios origin/place.map.kakao.com' } },
+        { url: `https://place.map.kakao.com/m/main/v/${id}`,   h: { ...baseHeaders, 'KA': 'sdk/4.4.24 os/ios origin/place.map.kakao.com' } },
+        { url: `https://place.map.kakao.com/v1/place/${id}`,   h: baseHeaders },
+        { url: `https://place.map.kakao.com/api/place/${id}`,  h: baseHeaders },
     ];
 
-    const bundleCandidates = foundApiPaths
-        .filter(p => /\/(?:place|main)\/(?:v\/)?$/.test(p + '/'))
-        .map(p => p.replace(/\/$/, '') + '/');
+    const errors = [];
 
-    const allPaths = [...new Set([...bundleCandidates, ...baseCandidates])];
+    for (const { url: endpoint, h } of candidates) {
+        try {
+            const res  = await fetch(endpoint, { headers: h });
+            const status = res.status;
 
-    for (const path of allPaths) {
-        for (const tryId of [...new Set([canonicalId, id])]) {
-            const endpoint = `https://place.map.kakao.com${path}${tryId}`;
-            try {
-                const res = await fetch(endpoint, { headers: apiHeaders });
-                if (!res.ok) continue;
-                const text = await res.text();
-                try {
-                    const raw = JSON.parse(text);
-                    if (raw && typeof raw === 'object' && !raw.error) {
-                        return json(buildResult(raw, { usedUrl: endpoint, canonicalId }));
-                    }
-                } catch { /* not JSON */ }
-            } catch { /* fetch failed */ }
+            if (!res.ok) {
+                errors.push({ url: endpoint, status });
+                continue;
+            }
+
+            const text = await res.text();
+            let raw;
+            try { raw = JSON.parse(text); } catch (e) {
+                errors.push({ url: endpoint, status, issue: 'not-json', preview: text.slice(0, 80) });
+                continue;
+            }
+
+            if (!raw || typeof raw !== 'object') {
+                errors.push({ url: endpoint, status, issue: 'not-object' });
+                continue;
+            }
+
+            // 성공 — 데이터 파싱
+            return json(buildResult(raw, endpoint));
+
+        } catch (e) {
+            errors.push({ url: endpoint, fetchError: e.message });
         }
     }
 
-    // ── 4. 완전 실패: 디버그 반환 ──────────────────────────────────────────
-    return json({
-        error: '장소 상세 정보를 가져올 수 없습니다.',
-        _debug: {
-            originalId:  id,
-            canonicalId,
-            finalUrl,
-            bundleUrl,
-            foundApiPaths,
-            triedPaths:  allPaths,
-        }
-    }, 200);
+    return json({ error: '모든 엔드포인트 실패', _errors: errors }, 502);
 }
 
-function buildResult(data, meta = {}) {
+function buildResult(data, usedUrl) {
     const basic    = data.basicInfo || data.place || data || {};
     const feedback = basic.feedback || {};
     const menuinfo = basic.menuinfo || {};
@@ -162,7 +115,7 @@ function buildResult(data, meta = {}) {
         rating, scorecnt, reviewcnt, menus,
         isOpen, isBreak, isHoliday, hours,
         homepage, parking,
-        _debug: meta
+        _debug: { usedUrl, topKeys: Object.keys(data) }
     };
 }
 
