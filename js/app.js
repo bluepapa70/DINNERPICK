@@ -114,6 +114,7 @@ const App = {
         } catch (e) {
             console.error('fetch 오류:', e);
             countEl.textContent = '⚠️ 맛집을 불러오지 못했어요 (네트워크 오류)';
+            spinBtn.disabled = false;
         }
     },
 
