@@ -197,8 +197,8 @@ const App = {
             console.log('[place] response:', data);
             if (data.error) {
                 console.warn('[place] API error:', data.error);
-                if (data._debug) console.log('[place] _debug:', JSON.stringify(data._debug, null, 2));
-                if (data._htmlPreview) console.log('[place] HTML preview:\n', data._htmlPreview);
+                if (data._errors) console.log('[place] _errors:', JSON.stringify(data._errors));
+                if (data._debug)  console.log('[place] _debug:',  JSON.stringify(data._debug, null, 2));
                 return;
             }
 
