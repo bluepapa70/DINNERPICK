@@ -168,7 +168,7 @@ const App = {
                 'mini-map',
                 parseFloat(restaurant.y),
                 parseFloat(restaurant.x),
-                restaurant.place_name
+                restaurant
             );
         }, 350);
 
